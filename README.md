@@ -1,165 +1,67 @@
-🐱 Project Overview
+## Project Overview
 
-This project implements an image classification model to predict whether an image contains a cat or a dog. The model leverages deep learning and Convolutional Neural Networks (CNNs) using a pre-trained MobileNetV2 model. The dataset used is the Cats vs Dogs dataset from Kaggle, and the model was trained using TensorFlow and Keras.
-⚙️ Requirements
+This project builds an image classification model to predict whether an image contains a **cat** or a **dog** using deep learning. The model is based on **MobileNetV2** (a pre-trained CNN) and fine-tuned for binary classification. The dataset used is the Kaggle **Cats vs Dogs** dataset.
 
-To run this project, make sure to install the required dependencies. You can create a virtual environment and install the dependencies using the following commands:
+## Requirements
 
-pip install -r requirements.txt
+Install the necessary libraries:
 
-Alternatively, you can install the necessary packages individually:
-
+```bash
 pip install tensorflow==2.18.0
 pip install numpy==1.26.0
-pip install matplotlib
-pip install pillow
+pip install matplotlib pillow
 pip install FuzzyTM>=0.4.0
 pip install PyQt5==5.15.11
 pip install PyQt5-sip>=12.15,<13
+```
 
-requirements.txt
+## Dataset
 
-tensorflow==2.18.0
-numpy==1.26.0
-matplotlib
-pillow
-FuzzyTM>=0.4.0
-PyQt5==5.15.11
-PyQt5-sip>=12.15,<13
+The dataset consists of images of cats and dogs organized into separate folders for training and validation.
 
-🔧 Project Setup
-1. Data Preprocessing and Image Verification
+## Key Steps
 
-This project first ensures that all images in the dataset are valid by verifying them using the PIL library. If any corrupted images are found, they are removed to ensure that the model is trained on clean data.
+1. **Data Preprocessing**: 
+   - Verifies and removes any corrupted images.
+   - Uses `ImageDataGenerator` to split the dataset into training and validation sets (80/20).
 
-# Function to check for corrupted images
-def check_images(directory):
-    invalid_images = []
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            if file.lower().endswith(('png', 'jpg', 'jpeg', 'bmp', 'gif')):
-                file_path = os.path.join(root, file)
-                try:
-                    with Image.open(file_path) as img:
-                        img.verify()  # Verifies if the image can be opened without errors
-                except (IOError, SyntaxError) as e:
-                    invalid_images.append(file_path)  # Collect paths of corrupted images
-    return invalid_images
+2. **Model Architecture**:
+   - Uses **MobileNetV2** pre-trained on ImageNet.
+   - Freezes the base model and adds custom layers for binary classification.
+   - Model architecture: `MobileNetV2 -> GlobalAveragePooling -> Dense(1024) -> Dense(1, sigmoid)`.
 
-2. Data Generators
+3. **Training**:
+   - Trains the model for 10 epochs using the `Adam` optimizer and `binary_crossentropy` loss.
+   - Validation accuracy is tracked.
 
-Data augmentation and splitting the dataset into training and validation sets is done using Keras ImageDataGenerator.
+4. **Model Evaluation**:
+   - After training, the model's performance is visualized using accuracy and loss plots.
 
-train_datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
-train_generator = train_datagen.flow_from_directory(
-    '/path/to/PetImages',
-    target_size=(224, 224),
-    batch_size=32,
-    class_mode='binary',
-    subset='training'
-)
-validation_generator = train_datagen.flow_from_directory(
-    '/path/to/PetImages',
-    target_size=(224, 224),
-    batch_size=32,
-    class_mode='binary',
-    subset='validation'
-)
+5. **Saving the Model**:
+   - The trained model is saved in the `.keras` format for later use.
 
-3. Model Architecture
+6. **Prediction**:
+   - The model is used to predict whether a given image contains a cat or dog.
 
-The model uses MobileNetV2, a pre-trained CNN architecture, as the base model for feature extraction. Custom layers are added on top for binary classification.
+## How to Run
 
-base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-base_model.trainable = False  # Freeze the base model
+1. **Train the Model**: 
+   - Run the main training script to preprocess the data and train the model.
+   
+2. **Make Predictions**:
+   - After training, load the model and use it to predict images:
+   ```python
+   model = tf.keras.models.load_model('cat_dog_model.keras')
+   img_path = '/path/to/your/image.jpg'
+   prediction = model.predict(image_processing_function(img_path))
+   ```
 
-x = base_model.output
-x = GlobalAveragePooling2D()(x)
-x = Dense(1024, activation='relu')(x)
-predictions = Dense(1, activation='sigmoid')(x)
+## Conclusion
 
-model = Model(inputs=base_model.input, outputs=predictions)
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+The project successfully classifies images of cats and dogs with a trained deep learning model. It utilizes transfer learning with **MobileNetV2** for feature extraction and achieves good accuracy on the test data.
 
-4. Training
+---
 
-The model is trained for 10 epochs using the training and validation datasets. The accuracy and loss are tracked throughout training.
 
-history = model.fit(
-    train_generator,
-    steps_per_epoch=train_generator.samples // 32,
-    epochs=10,
-    validation_data=validation_generator,
-    validation_steps=validation_generator.samples // 32
-)
 
-5. Model Evaluation
 
-After training, the model's accuracy and loss are plotted to visualize its performance over time.
-
-# Plotting the accuracy
-plt.plot(history.history['accuracy'], label='Train Accuracy')
-plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
-plt.xlabel('Epochs')
-plt.ylabel('Accuracy')
-plt.legend()
-plt.title('Model Accuracy')
-plt.show()
-
-# Plotting the loss
-plt.plot(history.history['loss'], label='Train Loss')
-plt.plot(history.history['val_loss'], label='Validation Loss')
-plt.xlabel('Epochs')
-plt.ylabel('Loss')
-plt.legend()
-plt.title('Model Loss')
-plt.show()
-
-6. Saving the Model
-
-Once trained, the model is saved in the .keras format.
-
-model.save('cat_dog_model.keras')
-
-🧠 Predicting on New Images
-
-After training, you can load the model and make predictions on new images. Below is the code to load a new image, preprocess it, and classify it as either a "Cat" or "Dog".
-
-# Load the saved model
-model = tf.keras.models.load_model('cat_dog_model.keras')
-
-# Load the image for prediction
-img_path = '/path/to/image.jpg'
-img = image.load_img(img_path, target_size=(224, 224))  # Resize the image
-img_array = image.img_to_array(img)  # Convert image to array
-img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
-
-# Normalize the image array (same as during training)
-img_array = img_array / 255.0
-
-# Make the prediction
-prediction = model.predict(img_array)
-
-# Print the prediction result
-if prediction[0] > 0.5:
-    print("Prediction: Dog")
-else:
-    print("Prediction: Cat")
-
-🧑‍💻 Usage
-1. Training the Model
-
-To train the model, simply run the main script, which will load the data, preprocess it, and start the training process.
-2. Making Predictions
-
-To use the model for predictions, save an image as a .jpg or .png file and run the prediction code with the path to the image.
-🔄 Model Evaluation
-
-You can track the model's performance using the accuracy and loss plots provided above, and tune the hyperparameters or use different architectures as needed to improve performance.
-📄 License
-
-Feel free to use and modify this code as you like. This project is open-source and licensed under the MIT License.
-Final Notes:
-
-    If you want to train the model for more epochs, just increase the epochs parameter in the fit function.
-    You can experiment with different pre-trained models like ResNet50 or InceptionV3 to see if they improve your model's performance.
